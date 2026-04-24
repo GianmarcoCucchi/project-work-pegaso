@@ -1,0 +1,7 @@
+-- Project Work NIS2 / ACN - Punto 4
+-- Esempi di esportazione CSV da eseguire con psql.
+-- La cartella export deve esistere prima dell'esecuzione.
+
+\copy (SELECT * FROM nis2_registry.fn_acn_profile_csv('12345678901')) TO 'export/acn_profile_azienda_digitale.csv' WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8');
+\copy (SELECT * FROM nis2_registry.fn_acn_profile_csv('09876543210')) TO 'export/acn_profile_sanitaria_nord.csv' WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8');
+\copy (SELECT * FROM nis2_registry.v_acn_profile_csv ORDER BY azienda, codice_servizio, codice_asset) TO 'export/acn_profile_completo.csv' WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8');

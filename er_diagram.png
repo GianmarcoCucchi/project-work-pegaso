@@ -1,0 +1,27 @@
+# Script di test e dataset simulato
+
+Questa cartella contiene gli script usati per verificare il funzionamento dello schema, delle query e della generazione CSV senza utilizzare dati aziendali reali.
+
+## File inclusi
+
+- `sql/05_test_dataset.sql`: dataset simulato aggiuntivo con una seconda organizzazione, asset, servizi, fornitori, responsabilità e dipendenze.
+- `tests/01_run_validation.sql`: controlli automatici basati su blocchi `DO` PostgreSQL. Se un controllo fallisce, lo script interrompe l'esecuzione con un errore esplicito.
+- `tests/02_export_csv_examples.sql`: comandi `\copy` per produrre file CSV di esempio nella cartella `export/`.
+
+## Esecuzione completa
+
+```bash
+createdb nis2_registry_demo
+psql -d nis2_registry_demo -f sql/01_schema.sql
+psql -d nis2_registry_demo -f sql/02_seed.sql
+psql -d nis2_registry_demo -f sql/04_acn_csv_export.sql
+psql -d nis2_registry_demo -f sql/05_test_dataset.sql
+psql -d nis2_registry_demo -f tests/01_run_validation.sql
+psql -d nis2_registry_demo -f tests/02_export_csv_examples.sql
+```
+
+Al termine dell'esecuzione vengono generati tre file CSV nella cartella `export/`:
+
+- `acn_profile_azienda_digitale.csv`
+- `acn_profile_sanitaria_nord.csv`
+- `acn_profile_completo.csv`
