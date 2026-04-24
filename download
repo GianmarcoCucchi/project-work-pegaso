@@ -1,0 +1,100 @@
+# Istruzioni di deploy
+
+## Dipendenze
+
+Per eseguire il progetto è necessario disporre di:
+
+- PostgreSQL 15 o superiore;
+- client `psql` installato;
+- permessi per creare database, schema ed estensioni;
+- estensione PostgreSQL `pgcrypto`, utilizzata per la generazione degli UUID.
+
+L'estensione viene creata automaticamente dallo script `01_schema.sql` tramite il comando:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
+## Struttura degli script
+
+Gli script devono essere eseguiti nel seguente ordine:
+
+1. `sql/01_schema.sql` — crea schema, tabelle, vincoli, indici, funzioni e trigger;
+2. `sql/02_seed.sql` — inserisce dati simulati;
+3. `sql/03_verify.sql` — esegue query di verifica;
+4. `sql/04_acn_csv_export.sql` — crea query, view e funzione per esportazione CSV.
+
+## Creazione del database
+
+Da terminale:
+
+```bash
+createdb nis2_registry_demo
+```
+
+## Creazione schema e caricamento dati
+
+```bash
+psql -d nis2_registry_demo -f sql/01_schema.sql
+psql -d nis2_registry_demo -f sql/02_seed.sql
+psql -d nis2_registry_demo -f sql/04_acn_csv_export.sql
+```
+
+## Verifica dell'installazione
+
+```bash
+psql -d nis2_registry_demo -f sql/03_verify.sql
+```
+
+In alternativa, è possibile collegarsi al database ed eseguire manualmente:
+
+```sql
+SET search_path TO nis2_registry;
+SELECT COUNT(*) FROM organization;
+SELECT COUNT(*) FROM asset;
+SELECT COUNT(*) FROM service;
+SELECT COUNT(*) FROM supplier_dependency;
+```
+
+## Esportazione CSV
+
+Per esportare il profilo di una singola azienda:
+
+```bash
+mkdir -p export
+psql -d nis2_registry_demo -c "\copy (SELECT * FROM nis2_registry.fn_acn_profile_csv('12345678901')) TO 'export/acn_profile_azienda_digitale.csv' WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8');"
+```
+
+Per esportare tutti i record della view:
+
+```bash
+mkdir -p export
+psql -d nis2_registry_demo -c "\copy (SELECT * FROM nis2_registry.v_acn_profile_csv ORDER BY azienda, codice_servizio, codice_asset) TO 'export/acn_profile_all.csv' WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8');"
+```
+
+## Gestione versioni degli script
+
+Gli script sono numerati in ordine progressivo per rendere chiara la sequenza di esecuzione. In un contesto reale, eventuali modifiche successive allo schema possono essere gestite aggiungendo nuovi file numerati, ad esempio:
+
+```text
+05_alter_add_new_field.sql
+06_migration_update_indexes.sql
+```
+
+Questa convenzione consente di mantenere tracciabilità delle modifiche nel repository Git e facilita la riproducibilità dell'ambiente.
+
+## Note operative
+
+Prima di eseguire nuovamente gli script su un database già popolato, è consigliabile creare un nuovo database di test oppure predisporre uno script di reset. Gli script forniti sono pensati per un ambiente dimostrativo e per il caricamento iniziale del progetto.
+
+## Verifica con dataset simulato
+
+Dopo il caricamento dello schema e delle query di esportazione è possibile eseguire il dataset aggiuntivo del punto 4:
+
+```bash
+psql -d nis2_registry_demo -f sql/05_test_dataset.sql
+psql -d nis2_registry_demo -f tests/01_run_validation.sql
+psql -d nis2_registry_demo -f tests/02_export_csv_examples.sql
+```
+
+Questi script verificano le relazioni principali e producono file CSV dimostrativi nella cartella `export/`.
